@@ -9,48 +9,59 @@ class App extends Component {
 
   state = {
     sushis: [],
-    sliceIndex: 0,
+    startIndex: 0,
+    eatenSushis: [],
     budget: 100,
-    eatenSushi: []
-  }
-
-  nextFour = () => {
-    this.setState({
-      sliceIndex: this.state.sliceIndex + 4
-    })
-  }
-
-  eatSushi = (id) => {
-
-    const sushiPrice = this.state.sushis.find(sushi => sushi.id === id).price 
-    const newBudget = this.state.budget - sushiPrice
-
-    if (this.state.budget >= sushiPrice && !this.state.eatenSushi.includes(id)) {
-      this.setState({
-        budget: newBudget,
-        eatenSushi: [...this.state.eatenSushi, id]
-      })
-    }
+    noBudget: false
   }
 
   componentDidMount() {
     fetch(API)
-    .then(res => res.json())
-    .then(sushis => this.setState({
-      sushis: sushis
+    .then(resp => resp.json())
+    .then(data  => this.setState({
+      sushis: data
     }))
-
   }
 
-  render() {
+  nextFour = () => {
+    if (this.state.startIndex + 4 >= this.state.sushis.length){
+      this.setState({
+        startIndex: this.state.startIndex + 4 - this.state.sushis.length
+      })
+    } else {
+      this.setState({
+        startIndex: this.state.startIndex + 4
+      })
+    }
+  }
+
+  eatSushi= (id, price) => {
+    if(this.state.eatenSushis.includes(id)) return;
+    if(this.state.budget >= price) {
+      this.setState({
+        eatenSushis: [...this.state.eatenSushis, id],
+        budget: this.state.budget - price,
+        noBudget: false
+      })
+    }else {
+      this.setState({
+        noBudget: true
+      })
+    }
     
-    const fourSushis = this.state.sushis.slice(this.state.sliceIndex, this.state.sliceIndex + 4)
-    console.log(fourSushis)
-    // debugger
+  }
+
+
+  render() {
+    const {sushis, startIndex, eatenSushis, budget, noBudget} = this.state
+    const fourSushis = sushis.slice(startIndex, startIndex + 4)
+
+    const finalSushi = fourSushis.map(sushi => ({...sushi, eaten: eatenSushis.includes(sushi.id)}))
+    console.log(startIndex)
     return (
       <div className="app">
-        <SushiContainer eatSushi={this.eatSushi} sushis={fourSushis} nextFour={this.nextFour} eatenSushi={this.state.eatenSushi}/>
-        <Table eatenSushi={this.state.eatenSushi} budget={this.state.budget}/>
+        <SushiContainer eatSushi={this.eatSushi} nextFour={this.nextFour} sushis={finalSushi} />
+        <Table noBudget={noBudget}budget={budget} eatenSushis={eatenSushis}/>
       </div>
     );
   }
